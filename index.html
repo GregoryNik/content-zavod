@@ -1,83 +1,853 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Blotato Dashboard</title>
-<style>
-body {background:#0b0f14;color:white;font-family:Arial;padding:30px}
-input,button {padding:10px;border-radius:8px;border:none;font-size:16px}
-button {background:#00ff88;font-weight:bold;cursor:pointer}
-.card {background:#111;padding:20px;border-radius:14px;margin:15px 0}
-.platform {color:#00ff88;font-weight:bold}
-</style>
-</head>
-<body>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blotato Accounts Dashboard</title>
 
-<h2>Blotato Dashboard</h2>
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<input id="apiKey" placeholder="Введите API ключ" style="width:350px">
-<button onclick="saveKey()">Сохранить</button>
-<button onclick="logout()">Выйти</button>
-<button onclick="loadAccounts()">Загрузить</button>
-
-<div id="output"></div>
-
-<script>
-const webhookUrl = "https://nikolaenko-ds.ru/webhook/content-zavod";
-
-function saveKey() {
-  const key = document.getElementById("apiKey").value.trim();
-  localStorage.setItem("blotato_key", key);
-  alert("Ключ сохранён");
-}
-
-function logout() {
-  localStorage.removeItem("blotato_key");
-  document.getElementById("apiKey").value = "";
-  document.getElementById("output").innerHTML = "";
-}
-
-window.onload = function() {
-  const saved = localStorage.getItem("blotato_key");
-  if (saved) {
-    document.getElementById("apiKey").value = saved;
-    loadAccounts();
-  }
-}
-
-async function loadAccounts() {
-  const key = (localStorage.getItem("blotato_key") || "").trim();
-  if (!key) return alert("Введите API ключ");
-
-  try {
-    const res = await fetch(`${webhookUrl}?key=${encodeURIComponent(key)}`);
-    const data = await res.json();
-
-    if (!Array.isArray(data)) {
-      document.getElementById("output").innerHTML =
-        "<pre>"+JSON.stringify(data,null,2)+"</pre>";
-      return;
+  <style>
+    :root{
+      --bg0:#05070c;
+      --bg1:#070a12;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.16);
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.72);
+      --muted2: rgba(234,240,255,.55);
+      --good:#24ff9f;
+      --cyan:#4dd8ff;
+      --pink:#ff5bd6;
+      --amber:#ffcc66;
+      --shadow: 0 20px 60px rgba(0,0,0,.55);
+      --shadow2: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 22px;
+      --radius2: 18px;
+      --blur: 18px;
     }
 
-    document.getElementById("output").innerHTML = data.map(acc => `
-      <div class="card">
-        <div class="platform">${acc.platform}</div>
-        <div><strong>${acc.name}</strong></div>
-        ${acc.profile_url
-            ? `<a href="${acc.profile_url}" target="_blank">ОТКРЫТЬ</a>`
-            : (acc.search_url
-                ? `<a href="${acc.search_url}" target="_blank">ПОИСК</a>`
-                : `<span style="color:#777">НЕТ ССЫЛКИ</span>`)
-        }
-      </div>
-    `).join("");
-  } catch(e) {
-    document.getElementById("output").innerHTML =
-      "<pre>Ошибка: "+e.message+"</pre>";
-  }
-}
-</script>
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 600px at 20% 15%, rgba(77,216,255,.18), transparent 60%),
+        radial-gradient(900px 700px at 85% 25%, rgba(255,91,214,.16), transparent 60%),
+        radial-gradient(900px 700px at 50% 90%, rgba(36,255,159,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
 
+    /* Subtle noise */
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.25'/%3E%3C/svg%3E");
+      opacity:.08;
+      mix-blend-mode:overlay;
+    }
+
+    a{ color:inherit; }
+    .container{
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+
+    /* Top bar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 18px;
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      min-width: 220px;
+    }
+    .logo{
+      width:44px; height:44px;
+      border-radius: 14px;
+      background:
+        radial-gradient(18px 18px at 30% 30%, rgba(255,255,255,.32), transparent 60%),
+        linear-gradient(135deg, rgba(77,216,255,.95), rgba(255,91,214,.85));
+      box-shadow: 0 10px 30px rgba(77,216,255,.18), 0 10px 30px rgba(255,91,214,.12);
+      border: 1px solid rgba(255,255,255,.16);
+    }
+    .brand h1{
+      margin:0;
+      font-size: 16px;
+      letter-spacing: .2px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .brand .sub{
+      font-size: 12px;
+      color: var(--muted2);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(var(--blur));
+      box-shadow: var(--shadow2);
+      user-select:none;
+    }
+    .dot{
+      width:9px; height:9px; border-radius:99px;
+      background: rgba(255,255,255,.25);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.08);
+    }
+    .dot.ok{ background: var(--good); box-shadow: 0 0 0 2px rgba(36,255,159,.18), 0 0 30px rgba(36,255,159,.25); }
+    .dot.bad{ background: #ff4d6d; box-shadow: 0 0 0 2px rgba(255,77,109,.18), 0 0 30px rgba(255,77,109,.22); }
+    .pill span{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: .2px;
+      white-space: nowrap;
+    }
+
+    /* Hero */
+    .hero{
+      border-radius: var(--radius);
+      padding: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(var(--blur));
+      position: relative;
+      overflow:hidden;
+      margin-bottom: 18px;
+    }
+    .hero:after{
+      content:"";
+      position:absolute; inset:-40px;
+      background:
+        radial-gradient(250px 180px at 20% 20%, rgba(77,216,255,.20), transparent 60%),
+        radial-gradient(260px 200px at 85% 35%, rgba(255,91,214,.18), transparent 60%),
+        radial-gradient(300px 240px at 55% 105%, rgba(36,255,159,.16), transparent 60%);
+      filter: blur(6px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .hero-inner{
+      position:relative;
+      display:grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    @media (max-width: 920px){
+      .hero-inner{ grid-template-columns: 1fr; }
+    }
+
+    .hero h2{
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: -0.6px;
+      font-weight: 850;
+    }
+    .hero p{
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.5;
+      max-width: 62ch;
+    }
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .field{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex: 1 1 360px;
+      min-width: 280px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(10,14,24,.55);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(var(--blur));
+    }
+    .field input{
+      width:100%;
+      outline:none;
+      border:none;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
+    .field input::placeholder{ color: rgba(234,240,255,.45); font-weight: 600; }
+    .hint{
+      font-size: 12px;
+      color: rgba(234,240,255,.55);
+      margin-top: 8px;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: .3px;
+      cursor: pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); }
+    .btn:active{ transform: translateY(0px) scale(.98); }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(36,255,159,.95), rgba(77,216,255,.85));
+      color: rgba(0,0,0,.88);
+      border-color: rgba(255,255,255,.0);
+      box-shadow: 0 12px 28px rgba(36,255,159,.18), 0 12px 28px rgba(77,216,255,.14);
+    }
+    .btn.primary:hover{ filter: brightness(1.02); }
+    .btn.danger{
+      background: rgba(255,77,109,.10);
+      border-color: rgba(255,77,109,.22);
+      color: rgba(255,205,215,.95);
+    }
+
+    .kbd{
+      font-size: 11px;
+      font-weight: 900;
+      padding: 5px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(234,240,255,.9);
+    }
+
+    /* Side stats card */
+    .side{
+      border-radius: var(--radius2);
+      background: rgba(10,14,24,.55);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(var(--blur));
+      padding: 14px 14px 12px;
+      box-shadow: var(--shadow2);
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .metric{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .metric .k{
+      color: rgba(234,240,255,.62);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing:.2px;
+    }
+    .metric .v{
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing:.2px;
+    }
+    .v.good{ color: var(--good); }
+    .v.cyan{ color: var(--cyan); }
+    .v.pink{ color: var(--pink); }
+
+    /* Filters */
+    .filters{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin: 14px 0 10px;
+      align-items:center;
+    }
+    .chip{
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.85);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .25px;
+      cursor:pointer;
+      user-select:none;
+      transition: background .12s ease, transform .12s ease, border-color .12s ease;
+    }
+    .chip:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); }
+    .chip.active{
+      background: rgba(36,255,159,.14);
+      border-color: rgba(36,255,159,.30);
+      color: rgba(220,255,242,.98);
+      box-shadow: 0 0 0 4px rgba(36,255,159,.06);
+    }
+
+    /* Grid */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 10px;
+    }
+    @media (max-width: 1000px){ .grid{ grid-template-columns: repeat(2, 1fr);} }
+    @media (max-width: 680px){ .grid{ grid-template-columns: 1fr;} }
+
+    .card{
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(var(--blur));
+      box-shadow: var(--shadow2);
+      padding: 16px;
+      position: relative;
+      overflow:hidden;
+      min-height: 178px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    .card:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.04));
+    }
+
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      width: fit-content;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .35px;
+      color: rgba(0,0,0,.86);
+      background: linear-gradient(135deg, rgba(36,255,159,.92), rgba(77,216,255,.84));
+    }
+    .tag.youtube{ background: linear-gradient(135deg, rgba(255,91,214,.86), rgba(77,216,255,.84)); }
+    .tag.instagram{ background: linear-gradient(135deg, rgba(255,91,214,.92), rgba(255,204,102,.86)); }
+    .tag.tiktok{ background: linear-gradient(135deg, rgba(77,216,255,.92), rgba(36,255,159,.86)); }
+
+    .name{
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.3px;
+      line-height: 1.15;
+      margin: 0;
+      word-break: break-word;
+    }
+    .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+      align-items:center;
+      color: rgba(234,240,255,.62);
+      font-weight: 650;
+      font-size: 12px;
+    }
+    .badge{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.82);
+      font-weight: 800;
+      letter-spacing:.25px;
+      display:inline-flex; gap:8px; align-items:center;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .linkbtn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      text-decoration:none;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing:.3px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    .linkbtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); }
+    .linkbtn.open{
+      background: rgba(36,255,159,.14);
+      border-color: rgba(36,255,159,.26);
+      color: rgba(220,255,242,.98);
+    }
+    .linkbtn.search{
+      background: rgba(77,216,255,.12);
+      border-color: rgba(77,216,255,.24);
+      color: rgba(217,246,255,.98);
+    }
+    .linkbtn.none{
+      background: rgba(255,255,255,.04);
+      color: rgba(234,240,255,.55);
+      border-color: rgba(255,255,255,.08);
+      cursor:not-allowed;
+      pointer-events:none;
+    }
+
+    .empty{
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.05);
+      border: 1px dashed rgba(255,255,255,.16);
+      color: rgba(234,240,255,.68);
+      font-weight: 650;
+    }
+
+    pre.debug{
+      margin: 14px 0 0;
+      padding: 14px;
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.10);
+      overflow:auto;
+      color: rgba(234,240,255,.86);
+      box-shadow: var(--shadow2);
+      max-height: 360px;
+    }
+    .footer{
+      margin-top: 22px;
+      color: rgba(234,240,255,.45);
+      font-size: 12px;
+      font-weight: 600;
+      display:flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .footer a{ color: rgba(234,240,255,.65); text-decoration:none; }
+    .footer a:hover{ text-decoration: underline; }
+
+    /* micro icon */
+    .ic{
+      width:16px; height:16px; display:inline-block;
+      border-radius: 6px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      position:relative;
+      flex: 0 0 16px;
+    }
+    .ic:after{
+      content:"";
+      position:absolute; inset:3px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, rgba(36,255,159,.92), rgba(77,216,255,.84));
+      opacity:.9;
+    }
+
+    /* Loading shimmer */
+    .skeleton{
+      animation: shimmer 1.1s linear infinite;
+      background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.10), rgba(255,255,255,.04));
+      background-size: 280% 100%;
+    }
+    @keyframes shimmer{ 0%{background-position: 0% 0} 100%{background-position: 280% 0} }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>Blotato Dashboard</h1>
+          <div class="sub">Connected accounts • quick links</div>
+        </div>
+      </div>
+
+      <div class="pill" title="Статус соединения с вашим n8n webhook">
+        <div id="statusDot" class="dot"></div>
+        <span id="statusText">Ожидание</span>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-inner">
+        <div>
+          <h2>Список подключённых аккаунтов в одном месте</h2>
+          <p>
+            Введите API‑ключ Blotato, и мы покажем все подключённые TikTok / Instagram / YouTube аккаунты.
+            Для YouTube, если Blotato не отдаёт handle/channelId, будет кнопка поиска по названию канала.
+          </p>
+
+          <div class="controls">
+            <div class="field">
+              <span class="ic" aria-hidden="true"></span>
+              <input id="apiKey" type="password" placeholder="blt_… ваш API ключ" autocomplete="off" />
+              <span class="kbd">⌘K</span>
+            </div>
+
+            <button class="btn primary" id="btnLoad">Загрузить</button>
+            <button class="btn" id="btnSave">Сохранить</button>
+            <button class="btn danger" id="btnLogout">Выйти</button>
+          </div>
+
+          <div class="hint">
+            Ключ хранится только в вашем браузере (localStorage). Если это публичная страница — не делитесь ключом.
+          </div>
+        </div>
+
+        <div class="side">
+          <div class="metric">
+            <div class="k">Всего аккаунтов</div>
+            <div class="v good" id="mTotal">—</div>
+          </div>
+          <div class="metric">
+            <div class="k">Instagram</div>
+            <div class="v pink" id="mInsta">—</div>
+          </div>
+          <div class="metric">
+            <div class="k">TikTok</div>
+            <div class="v cyan" id="mTiktok">—</div>
+          </div>
+          <div class="metric">
+            <div class="k">YouTube</div>
+            <div class="v" id="mYoutube">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="chip active" data-filter="all">Все</div>
+      <div class="chip" data-filter="instagram">Instagram</div>
+      <div class="chip" data-filter="tiktok">TikTok</div>
+      <div class="chip" data-filter="youtube">YouTube</div>
+
+      <div style="flex:1"></div>
+
+      <div class="field" style="flex:0 1 360px; min-width: 260px;">
+        <span class="ic" aria-hidden="true"></span>
+        <input id="search" type="text" placeholder="Поиск по имени/username…" />
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div id="empty" class="empty" style="display:none;">
+      Ничего не найдено. Проверьте фильтр или строку поиска.
+    </div>
+
+    <pre id="debug" class="debug" style="display:none;"></pre>
+
+    <div class="footer">
+      <div>Webhook: <span id="wh"></span></div>
+      <div>
+        <a href="https://my.blotato.com/api-dashboard" target="_blank" rel="noopener noreferrer">Blotato API Dashboard</a>
+        <span style="opacity:.35;"> • </span>
+        <a href="#" id="copyWebhook">Скопировать webhook</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== CONFIG ======
+    // ВАЖНО: используйте production webhook (НЕ /webhook-test/).
+    const webhookUrl = "https://nikolaenko-ds.ru/webhook/content-zavod";
+
+    // ====== STATE ======
+    let allAccounts = [];
+    let activeFilter = "all";
+
+    // ====== DOM ======
+    const elKey = document.getElementById("apiKey");
+    const elGrid = document.getElementById("grid");
+    const elDebug = document.getElementById("debug");
+    const elEmpty = document.getElementById("empty");
+    const elSearch = document.getElementById("search");
+
+    const elDot = document.getElementById("statusDot");
+    const elStatus = document.getElementById("statusText");
+
+    const mTotal = document.getElementById("mTotal");
+    const mInsta = document.getElementById("mInsta");
+    const mTiktok = document.getElementById("mTiktok");
+    const mYoutube = document.getElementById("mYoutube");
+
+    document.getElementById("wh").textContent = webhookUrl;
+
+    // Keyboard shortcut: Cmd/Ctrl + K focuses the key input
+    window.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        elKey.focus();
+      }
+    });
+
+    // ====== localStorage ======
+    const LS_KEY = "blotato_key";
+    function getSavedKey() { return (localStorage.getItem(LS_KEY) || "").trim(); }
+    function saveKey() { localStorage.setItem(LS_KEY, (elKey.value || "").trim()); setStatus(true, "Ключ сохранён"); }
+    function logout() {
+      localStorage.removeItem(LS_KEY);
+      elKey.value = "";
+      allAccounts = [];
+      render();
+      setStatus(null, "Ключ удалён");
+      elDebug.style.display = "none";
+    }
+
+    // ====== helpers ======
+    function setStatus(ok, text){
+      elDot.classList.remove("ok","bad");
+      if (ok === true) elDot.classList.add("ok");
+      if (ok === false) elDot.classList.add("bad");
+      elStatus.textContent = text || "—";
+    }
+
+    function normPlatform(p){
+      p = (p || "").toLowerCase();
+      if (p.includes("insta")) return "instagram";
+      if (p.includes("tiktok")) return "tiktok";
+      if (p.includes("you")) return "youtube";
+      return p || "other";
+    }
+
+    function tagClass(p){
+      const np = normPlatform(p);
+      if (np === "youtube") return "youtube";
+      if (np === "instagram") return "instagram";
+      if (np === "tiktok") return "tiktok";
+      return "";
+    }
+
+    function escapeHtml(s){
+      return String(s || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function render(){
+      const q = (elSearch.value || "").trim().toLowerCase();
+
+      const filtered = allAccounts
+        .filter(a => activeFilter === "all" ? true : normPlatform(a.platform) === activeFilter)
+        .filter(a => {
+          if (!q) return true;
+          const hay = `${a.name || ""} ${a.username || ""} ${a.platform || ""}`.toLowerCase();
+          return hay.includes(q);
+        });
+
+      // Metrics
+      const total = allAccounts.length;
+      const insta = allAccounts.filter(a => normPlatform(a.platform)==="instagram").length;
+      const tiktok = allAccounts.filter(a => normPlatform(a.platform)==="tiktok").length;
+      const youtube = allAccounts.filter(a => normPlatform(a.platform)==="youtube").length;
+      mTotal.textContent = total ? total : "—";
+      mInsta.textContent = insta ? insta : "—";
+      mTiktok.textContent = tiktok ? tiktok : "—";
+      mYoutube.textContent = youtube ? youtube : "—";
+
+      if (!filtered.length){
+        elGrid.innerHTML = "";
+        elEmpty.style.display = total ? "block" : "none";
+        return;
+      }
+      elEmpty.style.display = "none";
+
+      elGrid.innerHTML = filtered.map(acc => {
+        const platform = normPlatform(acc.platform);
+        const tCls = tagClass(platform);
+
+        const name = escapeHtml(acc.name || acc.username || "Аккаунт");
+        const username = (acc.username || "").trim();
+        const id = escapeHtml(acc.account_id || acc.id || "");
+
+        const url = acc.profile_url || null;
+        const sUrl = acc.search_url || null;
+
+        const linkHtml = url
+          ? `<a class="linkbtn open" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">ОТКРЫТЬ</a>`
+          : (sUrl
+              ? `<a class="linkbtn search" href="${escapeHtml(sUrl)}" target="_blank" rel="noopener noreferrer">ПОИСК</a>`
+              : `<span class="linkbtn none">НЕТ ССЫЛКИ</span>`
+            );
+
+        const uBadge = username
+          ? `<span class="badge">@${escapeHtml(username.replace(/^@/, ""))}</span>`
+          : `<span class="badge">id: ${id || "—"}</span>`;
+
+        return `
+          <div class="card">
+            <div class="tag ${tCls}">${platform.toUpperCase()}</div>
+            <h3 class="name">${name}</h3>
+            <div class="meta">
+              ${uBadge}
+              ${id ? `<span class="badge">account_id: ${id}</span>` : ``}
+            </div>
+            <div class="actions">
+              ${linkHtml}
+              <a class="linkbtn" href="#" data-copy="${escapeHtml(username || name)}">КОПИРОВАТЬ</a>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Copy buttons
+      elGrid.querySelectorAll("[data-copy]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const v = btn.getAttribute("data-copy") || "";
+          navigator.clipboard.writeText(v).then(() => setStatus(true, "Скопировано")).catch(() => setStatus(false, "Не удалось скопировать"));
+        });
+      });
+    }
+
+    async function loadAccounts(){
+      const key = (getSavedKey() || (elKey.value || "").trim()).trim();
+      if (!key){
+        setStatus(false, "Введите API‑ключ");
+        return;
+      }
+
+      // keep input in sync (but don't force save)
+      elKey.value = key;
+
+      setStatus(null, "Загрузка…");
+      elDebug.style.display = "none";
+      elDebug.textContent = "";
+
+      // show skeleton
+      elGrid.innerHTML = Array.from({length: 6}).map(() => `
+        <div class="card skeleton" style="min-height:178px;">
+          <div style="height:26px; width:110px; border-radius:999px; background: rgba(255,255,255,.07);"></div>
+          <div style="height:22px; width:75%; border-radius:12px; background: rgba(255,255,255,.07);"></div>
+          <div style="height:14px; width:55%; border-radius:12px; background: rgba(255,255,255,.06);"></div>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <div style="height:36px; width:120px; border-radius:16px; background: rgba(255,255,255,.06);"></div>
+            <div style="height:36px; width:140px; border-radius:16px; background: rgba(255,255,255,.06);"></div>
+          </div>
+        </div>
+      `).join("");
+
+      try{
+        const url = `${webhookUrl}?key=${encodeURIComponent(key)}`;
+        const res = await fetch(url, { method:"GET" });
+
+        const text = await res.text();
+        if (!text){
+          setStatus(false, "Пустой ответ от webhook");
+          elDebug.style.display = "block";
+          elDebug.textContent = "Пустой body. Проверь Respond to Webhook / response mode в n8n.";
+          allAccounts = [];
+          render();
+          return;
+        }
+
+        let data;
+        try{ data = JSON.parse(text); }
+        catch(e){
+          setStatus(false, "Ответ не JSON");
+          elDebug.style.display = "block";
+          elDebug.textContent = "Raw response:\n\n" + text;
+          allAccounts = [];
+          render();
+          return;
+        }
+
+        if (!Array.isArray(data)){
+          setStatus(false, "Ошибка ответа");
+          elDebug.style.display = "block";
+          elDebug.textContent = JSON.stringify(data, null, 2);
+          allAccounts = [];
+          render();
+          return;
+        }
+
+        // n8n returns items as array of objects; normalize
+        allAccounts = data.map(x => x && x.platform ? x : (x.json || x)).filter(Boolean);
+
+        setStatus(true, "Данные загружены");
+        render();
+      }catch(e){
+        setStatus(false, "FAILED TO FETCH");
+        elDebug.style.display = "block";
+        elDebug.textContent = String(e && e.message ? e.message : e);
+        allAccounts = [];
+        render();
+      }
+    }
+
+    // ====== Wire up UI ======
+    document.getElementById("btnLoad").addEventListener("click", loadAccounts);
+    document.getElementById("btnSave").addEventListener("click", saveKey);
+    document.getElementById("btnLogout").addEventListener("click", logout);
+
+    elSearch.addEventListener("input", render);
+
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        activeFilter = chip.getAttribute("data-filter") || "all";
+        render();
+      });
+    });
+
+    document.getElementById("copyWebhook").addEventListener("click", (e) => {
+      e.preventDefault();
+      navigator.clipboard.writeText(webhookUrl).then(() => setStatus(true, "Webhook скопирован")).catch(() => setStatus(false, "Не удалось скопировать"));
+    });
+
+    // ====== Auto-load ======
+    (function init(){
+      const saved = getSavedKey();
+      if (saved){
+        elKey.value = saved;
+        loadAccounts();
+      }else{
+        setStatus(null, "Ожидание");
+      }
+    })();
+  </script>
 </body>
 </html>
