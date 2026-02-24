@@ -3,162 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Контент Завод — Дашборд</title>
+    <title>Контент Завод — Управление</title>
     <style>
         :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #00ff88; --text: #ffffff; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        h1 { color: var(--accent); text-shadow: 0 0 10px rgba(0,255,136,0.3); }
-        #auth-screen { text-align: center; margin-top: 100px; }
-        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 300px; margin-bottom: 20px; outline: none; }
-        .btn { background: var(--accent); color: black; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn:hover { background: #00cc6e; transform: scale(1.02); }
-        #dashboard { display: none; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
-        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; position: relative; overflow: hidden; }
-        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); }
-        .status { color: var(--accent); font-weight: bold; margin-bottom: 20px; }
-        .error-log { background: #2a1111; color: #ff9999; padding: 20px; border-radius: 10px; border: 1px solid #551111; margin-top: 20px; line-height: 1.6; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { color: var(--accent); border-bottom: 2px solid #333; padding-bottom: 10px; }
+        
+        /* Сетка аккаунтов */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
+        .card { background: var(--card); border-radius: 15px; padding: 25px; border: 1px solid #333; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
+        
+        .platform-label { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: bold; }
+        .username { font-size: 20px; font-weight: bold; margin: 5px 0 20px 0; }
+        
+        .stat-box { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .stat-label { font-size: 14px; color: #aaa; }
+        .stat-value { font-size: 22px; font-weight: bold; }
+        .views { color: #00d4ff; }
+
+        .loading { text-align: center; margin-top: 50px; font-size: 18px; color: var(--accent); }
+        .error { background: #331111; color: #ff9999; padding: 20px; border-radius: 10px; border: 1px solid red; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="auth-screen">
-        <div class="auth-card">
-            <h1>🏭 Контент Завод</h1>
-            <p style="color: #888;">Введите API ключ (Settings > API keys)</p>
-            <input type="password" id="api-key" placeholder="blt_...">
-            <br>
-            <button class="btn" onclick="login()">Запустить производство</button>
-        </div>
-    </div>
-
-    <div id="dashboard">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>🏭 Контент Завод — Аналитика</h1>
-            <button onclick="logout()" style="background:none; border:none; color:#ff4444; cursor:pointer; text-decoration: underline;">Сменить ключ</button>
-        </div>
-        <div id="status" class="status">Инициализация...</div>
-        <div id="stats-grid" class="grid"></div>
-        <div id="debug-info"></div>
-    </div>
+    <h1>🏭 Контент Завод — Аналитика</h1>
+    <div id="status" class="loading">⚙️ Соединение с n8n и сбор данных из Blotato...</div>
+    <div id="stats-grid" class="grid"></div>
+    <div id="error-box" class="error" style="display:none;"></div>
 </div>
 
 <script>
-    const storageKey = 'blotato_factory_key_v3';
+    // СЮДА ВСТАВЬТЕ ВАШ URL ИЗ n8n
+    const n8nWebhookUrl = "ВАШ_ПРОДАКШН_URL_ВЕБХУКА_ИЗ_N8N";
 
-    window.onload = () => {
-        const savedKey = localStorage.getItem(storageKey);
-        if (savedKey) init(savedKey);
-    };
-
-    function login() {
-        const key = document.getElementById('api-key').value.trim();
-        if (key.startsWith('blt_')) { 
-            localStorage.setItem(storageKey, key); 
-            init(key); 
-        } else { 
-            alert("Ключ должен начинаться с blt_"); 
-        }
-    }
-
-    function logout() {
-        localStorage.removeItem(storageKey);
-        location.reload();
-    }
-
-    async function init(key) {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
+    async function loadData() {
+        const grid = document.getElementById('stats-grid');
         const status = document.getElementById('status');
-        const grid = document.getElementById('stats-grid');
-        const debug = document.getElementById('debug-info');
+        const errorBox = document.getElementById('error-box');
 
-        status.innerText = "⚙️ Проверка каналов связи с Blotato...";
-        
-        // Перебор возможных эндпоинтов на основе документации
-        const endpoints = [
-            "https://api.blotato.com/v1/accounts",
-            "https://api.blotato.com/v1/social-accounts",
-            "https://api.blotato.com/v1/account"
-        ];
-
-        let success = false;
-        let lastError = "";
-
-        for (let url of endpoints) {
-            if (success) break;
+        try {
+            const response = await fetch(n8nWebhookUrl);
+            if (!response.ok) throw new Error("n8n вернул ошибку " + response.status);
             
-            try {
-                // Используем прокси, который не добавляет свои заголовки (allorigins через raw)
-                const finalUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                
-                const response = await fetch(finalUrl, {
-                    method: 'GET',
-                    headers: { 
-                        'Authorization': `Bearer ${key}`,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    renderData(data);
-                    success = true;
-                    status.innerText = "✅ Связь установлена. Данные получены.";
-                } else {
-                    lastError = `Ошибка сервера: ${response.status}`;
-                }
-            } catch (err) {
-                lastError = err.message;
+            const data = await response.json();
+            
+            // Если данных нет
+            if (!data || data.length === 0) {
+                status.innerText = "🔌 Аккаунты не найдены. Проверьте подключение в Blotato.";
+                return;
             }
-        }
 
-        if (!success) {
-            status.innerText = "❌ Ошибка загрузки";
-            debug.innerHTML = `
-                <div class="error-log">
-                    <b>Не удалось получить данные:</b> ${lastError}<br><br>
-                    <b>Вероятные причины:</b><br>
-                    1. В Blotato не созданы API ключи или они отозваны[cite: 5].<br>
-                    2. В разделе <b>Social accounts</b> не подключены аккаунты (YouTube, TikTok и др.)[cite: 5].<br>
-                    3. Сервер Blotato блокирует запросы от автоматических прокси.
-                </div>`;
-        }
-    }
-
-    function renderData(data) {
-        const grid = document.getElementById('stats-grid');
-        const accounts = Array.isArray(data) ? data : (data.accounts || [data]);
-        
-        if (accounts.length === 0) {
-            document.getElementById('status').innerText = "🔌 Аккаунты найдены, но список пуст.";
-            return;
-        }
-
-        grid.innerHTML = accounts.map(acc => `
-            <div class="card">
-                <div style="color: var(--accent); font-size: 11px; text-transform: uppercase; font-weight: bold;">
-                    ${acc.platform || 'Соцсеть'}
-                </div>
-                <div style="font-size: 22px; font-weight: bold; margin: 10px 0;">${acc.username || 'Аккаунт'}</div>
-                
-                <div style="margin-top: 20px;">
-                    <div style="color: #888; font-size: 13px;">Опубликовано видео:</div>
-                    <div style="font-size: 28px; font-weight: bold;">${acc.total_posts || acc.post_count || 0}</div>
-                </div>
-
-                <div style="margin-top: 15px;">
-                    <div style="color: #888; font-size: 13px;">Просмотры (Viral AI Coach):</div>
-                    <div style="font-size: 28px; font-weight: bold; color: #00d4ff;">
-                        ${acc.metrics?.views || acc.total_views || '⚡ 0'}
+            status.style.display = 'none';
+            grid.innerHTML = data.map(acc => `
+                <div class="card">
+                    <div class="platform-label">${acc.platform || 'Соцсеть'}</div>
+                    <div class="username">${acc.username || 'Без имени'}</div>
+                    
+                    <div class="stat-box">
+                        <span class="stat-label">Опубликовано</span>
+                        <span class="stat-value">${acc.total_posts || 0}</span>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <span class="stat-label">Просмотры</span>
+                        <span class="stat-value views">${acc.metrics?.views || acc.total_views || 0}</span>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+
+        } catch (err) {
+            status.style.display = 'none';
+            errorBox.style.display = 'block';
+            errorBox.innerHTML = `<b>Ошибка:</b> ${err.message}<br><br>
+            1. Убедитесь, что воркфлоу в n8n активирован.<br>
+            2. Проверьте, что n8n успешно получает данные от Blotato.`;
+        }
     }
+
+    loadData();
 </script>
+
 </body>
 </html>
