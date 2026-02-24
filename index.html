@@ -5,115 +5,106 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Контент Завод — Дашборд</title>
     <style>
-        :root { --bg: #0a0a0a; --card: #161616; --accent: #00ff88; --text: #ececec; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        h1 { border-left: 5px solid var(--accent); padding-left: 15px; margin-bottom: 30px; }
-        
-        /* Секция ввода ключа */
-        #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 300px; margin-bottom: 10px; }
-        button { background: var(--accent); color: black; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
-        /* Сетка дашборда */
+        :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #00ff88; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 { color: var(--accent); }
+        #auth-screen { text-align: center; margin-top: 100px; }
+        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 300px; margin-bottom: 20px; }
+        .btn { background: var(--accent); color: black; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         #dashboard { display: none; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #222; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        .platform { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 10px; display: block; }
-        .stat-val { font-size: 32px; font-weight: bold; margin: 10px 0; }
-        .stat-label { color: #888; font-size: 14px; }
-        .logout { font-size: 12px; color: #ff4444; cursor: pointer; text-decoration: underline; margin-top: 20px; display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
+        .card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #333; }
+        .status { color: var(--accent); margin-bottom: 20px; }
+        .error-log { background: #331111; color: #ff9999; padding: 15px; border-radius: 8px; font-size: 12px; margin-top: 20px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="auth-screen">
-        <h2>🏭 Контент Завод</h2>
-        <p>Введите ваш API ключ 👇 </p>
-        <input type="password" id="api-key-input" placeholder="blt_...">
-        <button onclick="saveKey()">Запустить производство</button>
+        <div class="auth-card">
+            <h1>🏭 Контент Завод</h1>
+            <p>Введите API ключ из настроек Blotato</p>
+            <input type="password" id="api-key" placeholder="blt_...">
+            <br>
+            <button class="btn" onclick="login()">Запустить цех</button>
+        </div>
     </div>
 
     <div id="dashboard">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>Контент Завод — Аналитика</h1>
-            <span class="logout" onclick="logout()">Сменить ключ</span>
+            <h1>🏭 Контент Завод — Аналитика</h1>
+            <button onclick="logout()" style="background:none; border:none; color:#ff4444; cursor:pointer;">Выйти</button>
         </div>
-        
-        <div id="stats-grid" class="grid">
-            </div>
+        <div id="status" class="status">Ожидание данных...</div>
+        <div id="stats-grid" class="grid"></div>
+        <div id="debug-info"></div>
     </div>
 </div>
 
 <script>
-    const authScreen = document.getElementById('auth-screen');
-    const dashboard = document.getElementById('dashboard');
-    const statsGrid = document.getElementById('stats-grid');
+    const storageKey = 'blotato_key_v2';
 
-    // Проверка ключа при загрузке
     window.onload = () => {
-        const savedKey = localStorage.getItem('blotato_key');
-        if (savedKey) {
-            showDashboard(savedKey);
-        }
+        const savedKey = localStorage.getItem(storageKey);
+        if (savedKey) init(savedKey);
     };
 
-    function saveKey() {
-        const key = document.getElementById('api-key-input').value;
-        if (key.startsWith('blt_')) {
-            localStorage.setItem('blotato_key', key);
-            showDashboard(key);
-        } else {
-            alert('Неверный формат ключа. Он должен начинаться с blt_');
-        }
-    }
-
-    async function showDashboard(key) {
-        authScreen.style.display = 'none';
-        dashboard.style.display = 'block';
-        statsGrid.innerHTML = '🔧 Собираем статистику...';
-
-        try {
-            // Запрос к Blotato (используем эндпоинты из доков)
-            const response = await fetch('https://api.blotato.com/v1/accounts', {
-                headers: { 'Authorization': `Bearer ${key}` }
-            });
-            const accounts = await response.json();
-            renderStats(accounts);
-        } catch (err) {
-            statsGrid.innerHTML = '<p style="color:red">Ошибка подключения. Проверьте ключ или доступ к API.</p>';
-        }
-    }
-
-    function renderStats(accounts) {
-        // Если API вернуло пустой список или ошибку, покажем заглушку для примера
-        if (!accounts || accounts.length === 0) {
-            statsGrid.innerHTML = '<p>Аккаунты не найдены. Подключите их в Blotato.</p>';
-            return;
-        }
-
-        statsGrid.innerHTML = accounts.map(acc => `
-            <div class="card">
-                <span class="platform">${acc.platform}</span>
-                <div class="stat-label">Профиль</div>
-                <div style="font-weight:bold; margin-bottom:15px;">${acc.username || 'Без имени'}</div>
-                
-                <div class="stat-label">Опубликовано видео</div>
-                <div class="stat-val">${acc.total_posts || 0}</div>
-                
-                <div class="stat-label">Просмотры (Total)</div>
-                <div class="stat-val" style="color: #00d4ff;">${acc.metrics?.views || '⚡ 0'}</div>
-            </div>
-        `).join('');
+    function login() {
+        const key = document.getElementById('api-key').value.trim();
+        if (key) { localStorage.setItem(storageKey, key); init(key); }
     }
 
     function logout() {
-        localStorage.removeItem('blotato_key');
+        localStorage.removeItem(storageKey);
         location.reload();
     }
-</script>
 
+    async function init(key) {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        const status = document.getElementById('status');
+        const grid = document.getElementById('stats-grid');
+        const debug = document.getElementById('debug-info');
+
+        status.innerText = "⚙️ Запрос к API Blotato...";
+        
+        // Используем универсальный прокси для локального запуска
+        const proxy = "https://corsproxy.io/?";
+        const target = "https://api.blotato.com/v1/accounts";
+
+        try {
+            const response = await fetch(proxy + encodeURIComponent(target), {
+                headers: { 'Authorization': `Bearer ${key}` }
+            });
+
+            if (!response.ok) throw new Error(`Ошибка: ${response.status} (Проверьте ключ)`);
+
+            const data = await response.json();
+            
+            if (!data || data.length === 0) {
+                status.innerText = "⚠️ Аккаунты не найдены. Добавьте их в разделе Social Accounts в Blotato.";
+                return;
+            }
+
+            status.innerText = `✅ Найдено аккаунтов: ${data.length}`;
+            grid.innerHTML = data.map(acc => `
+                <div class="card">
+                    <div style="color: #888; font-size: 12px;">${acc.platform?.toUpperCase() || 'PLATFORM'}</div>
+                    <div style="font-size: 20px; font-weight: bold; margin: 10px 0;">${acc.username || 'Без имени'}</div>
+                    <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+                    <div style="color: #888;">Всего видео: <b style="color: white;">${acc.total_posts || 0}</b></div>
+                    <div style="color: #888; margin-top: 5px;">Просмотры: <b style="color: #00d4ff;">${acc.metrics?.views || '⚡ 0'}</b></div>
+                </div>
+            `).join('');
+
+        } catch (err) {
+            status.innerText = "❌ Ошибка подключения";
+            debug.innerHTML = `<div class="error-log"><b>Детали ошибки:</b><br>${err.message}<br><br>1. Проверьте ключ в Blotato (Settings -> API keys).<br>2. Убедитесь, что есть интернет-соединение.</div>`;
+        }
+    }
+</script>
 </body>
 </html>
