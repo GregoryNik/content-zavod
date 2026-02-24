@@ -6,27 +6,37 @@
     <title>Контент Завод — Аналитика</title>
     <style>
         :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #00ff88; --text: #ffffff; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; }
-        h1 { color: var(--accent); margin: 0; font-size: 28px; letter-spacing: 1px; }
-        .btn-reset { background: none; border: 1px solid #444; color: #ff4444; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1000px; }
         
-        #auth-screen { text-align: center; margin-top: 100px; }
-        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; width: 300px; margin-bottom: 20px; outline: none; }
-        input:focus { border-color: var(--accent); }
-        .btn-login { background: var(--accent); color: black; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; }
+        /* ШАПКА */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; }
+        h1 { color: var(--accent); margin: 0; font-size: 28px; letter-spacing: 1px; text-transform: uppercase; font-weight: 900; }
+        .btn-reset { background: #ff4444; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        #dashboard { display: none; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-        .card { background: var(--card); border-radius: 20px; padding: 25px; border: 1px solid #333; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-3px); }
-        .platform { font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 900; opacity: 0.8; }
-        .username { font-size: 22px; font-weight: bold; display: block; margin: 10px 0; }
-        .stat-item { display: flex; justify-content: space-between; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
-        .stat-value { font-weight: bold; color: var(--accent); font-size: 20px; }
-        .loading { text-align: center; color: var(--accent); margin-top: 50px; font-size: 18px; }
+        /* ЭКРАН ВХОДА */
+        #auth-screen { text-align: center; margin-top: 15vh; }
+        .auth-card { background: var(--card); padding: 50px; border-radius: 30px; border: 1px solid #333; display: inline-block; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+        input { background: #222; border: 2px solid #444; color: white; padding: 20px; border-radius: 15px; width: 350px; margin-bottom: 25px; font-size: 18px; outline: none; text-align: center; }
+        input:focus { border-color: var(--accent); }
+        .btn-login { background: var(--accent); color: black; border: none; padding: 20px 40px; border-radius: 15px; font-weight: 900; cursor: pointer; width: 100%; font-size: 18px; text-transform: uppercase; }
+
+        /* ДЭШБОРД */
+        #dashboard { display: none; width: 100%; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; margin-bottom: 50px; }
+        .card { background: var(--card); border-radius: 25px; padding: 30px; border: 1px solid #333; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
+        .platform { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 900; margin-bottom: 10px; display: block; opacity: 0.8; }
+        .username { font-size: 24px; font-weight: 800; margin-bottom: 20px; display: block; }
+        .stat-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 18px; border-radius: 15px; margin-bottom: 12px; }
+        .stat-label { color: #888; font-size: 14px; }
+        .stat-value { font-size: 22px; font-weight: 900; color: var(--accent); }
+
+        /* МОНИТОР */
+        .log-panel { background: #000; border: 1px dashed #444; border-radius: 15px; padding: 20px; width: 100%; margin-top: 40px; font-family: monospace; }
+        .log-header { color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 15px; display: block; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        pre { background: #111; padding: 15px; border-radius: 10px; overflow-x: auto; color: #00ff88; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+        .loading { text-align: center; margin-top: 100px; font-size: 20px; color: var(--accent); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -35,9 +45,9 @@
     <div id="auth-screen">
         <div class="auth-card">
             <h1>🏭 КОНТЕНТ ЗАВОД</h1>
-            <p style="color:#888;">Введите API ключ Blotato</p>
-            <input type="password" id="key-input" placeholder="blt_...">
-            <button class="btn-login" onclick="startFactory()">ЗАПУСТИТЬ ЦЕХ</button>
+            <p style="color:#666; margin-bottom:20px;">ДОСТУП В ЦЕХ</p>
+            <input type="password" id="key-input" placeholder="ВСТАВЬ КЛЮЧ BLT_...">
+            <button class="btn-login" onclick="startFactory()">ЗАПУСТИТЬ</button>
         </div>
     </div>
 
@@ -46,27 +56,31 @@
             <h1>🏭 ЦЕХ АНАЛИТИКИ</h1>
             <button class="btn-reset" onclick="resetFactory()">ВЫХОД</button>
         </div>
-        <div id="loader" class="loading">⚙️ Получаем данные из фермы...</div>
+        <div id="loader" class="loading">⚙️ ПОДКЛЮЧЕНИЕ К СИСТЕМЕ...</div>
         <div id="stats-grid" class="grid"></div>
+
+        <div class="log-panel">
+            <span class="log-header">📟 МОНИТОР МАССИВА (DEBUG LOG)</span>
+            <pre id="raw-log">Ожидание данных...</pre>
+        </div>
     </div>
 </div>
 
 <script>
-    // ТВОЙ ОСНОВНОЙ URL (без -test)
+    // URL для работы в режиме Active (Production)
     const webhookUrl = "https://nikolaenko-ds.ru/webhook/content-zavod";
 
     window.onload = () => {
-        if (localStorage.getItem('zavod_key')) showStats();
+        const savedKey = localStorage.getItem('zavod_key');
+        if (savedKey) showStats(savedKey);
     };
 
     function startFactory() {
-        const val = document.getElementById('key-input').value.trim();
-        if (val.startsWith('blt_')) {
-            localStorage.setItem('zavod_key', val);
-            showStats();
-        } else {
-            alert("Ключ должен начинаться с blt_");
-        }
+        const key = document.getElementById('key-input').value.trim();
+        if (key.startsWith('blt_')) {
+            localStorage.setItem('zavod_key', key);
+            showStats(key);
+        } else { alert("Ключ должен начинаться с blt_"); }
     }
 
     function resetFactory() {
@@ -74,37 +88,83 @@
         location.reload();
     }
 
-    async function showStats() {
+    async function showStats(key) {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         const grid = document.getElementById('stats-grid');
         const loader = document.getElementById('loader');
-        const key = localStorage.getItem('zavod_key');
+        const logDisplay = document.getElementById('raw-log');
 
         try {
-            const response = await fetch(webhookUrl, {
-                headers: { 'blotato-api-key': key }
+            const response = await fetch(`${webhookUrl}?key=${encodeURIComponent(key)}`, { 
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/json'
+                }
             });
-            const data = await response.json();
-            
+
+            if (!response.ok) {
+                throw new Error(`Ошибка сервера: ${response.status}`);
+            }
+
+            const raw = await response.text();
+            if (!raw || !raw.trim()) {
+                throw new Error("Пустой ответ от webhook (body пустой). Проверь Respond to Webhook / response mode в n8n.");
+            }
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                // покажем сырой ответ, чтобы понять что вернул сервер (HTML, текст ошибки, обрезанный JSON и т.п.)
+                logDisplay.innerText = raw;
+                throw new Error("Ответ не является валидным JSON (возможен CORS/прокси/ошибка ноды).");
+            }
+
+            logDisplay.innerText = JSON.stringify(data, null, 2);
+
+            if (data.message && !Array.isArray(data)) {
+                loader.innerHTML = "❌ n8n не настроен на ответ (Response Mode).";
+                return;
+            }
+
             loader.style.display = 'none';
             grid.innerHTML = data.map(acc => `
                 <div class="card">
                     <span class="platform">${acc.platform || 'Social'}</span>
                     <span class="username">${acc.name || acc.username || 'Аккаунт'}</span>
+
+                    <div style="display:flex; gap:10px; margin-bottom:18px;">
+                        ${
+                            acc.profile_url
+                                ? `<a href="${acc.profile_url}" target="_blank" rel="noopener noreferrer"
+                                    style="background:#00ff88;color:#000;padding:10px 14px;border-radius:12px;
+                                           font-weight:900;text-decoration:none;display:inline-block;">
+                                    ОТКРЫТЬ
+                                   </a>`
+                                : `<span style="background:#333;color:#999;padding:10px 14px;border-radius:12px;
+                                               font-weight:900;display:inline-block;">
+                                    НЕТ ССЫЛКИ
+                                   </span>`
+                        }
+                    </div>
+
                     <div class="stat-item">
-                        <span>Видео</span>
+                        <span class="stat-label">ВИДЕО</span>
                         <span class="stat-value">${acc.total_posts || 0}</span>
                     </div>
                     <div class="stat-item">
-                        <span>Просмотры</span>
+                        <span class="stat-label">ПРОСМОТРЫ</span>
                         <span class="stat-value" style="color:#00d4ff;">${(acc.total_views || 0).toLocaleString()}</span>
                     </div>
-                    ${acc.url ? `<a href="${acc.url}" target="_blank" style="color:#00ff88; text-decoration:none; font-size:12px; margin-top:10px; display:block;">🔗 Ссылка на аккаунт</a>` : ''}
                 </div>
             `).join('');
+
         } catch (err) {
-            loader.innerHTML = "❌ Ошибка. Убедись, что воркфлоу в n8n включен (ACTIVE).";
+            loader.innerHTML = "❌ ОШИБКА СВЯЗИ (FAILED TO FETCH)";
+            logDisplay.innerText = "Критическая ошибка: " + err.message + 
+                "\n\nЧек-лист решения:\n1) Включи тумблер ACTIVE у workflow в n8n.\n2) Проверь, что Webhook доступен ИМЕННО по HTTPS и публично (GitHub Pages не может ходить на http/localhost — браузер блокирует Mixed Content).\n3) В Webhook Node включи CORS и разреши заголовок blotato-api-key (Access-Control-Allow-Headers).\n4) Убедись, что n8n реально отвечает JSON: Response Mode = \"Last Node\" ИЛИ используй \"Respond to Webhook\" node.\n5) Если видишь preflight OPTIONS — добавь метод OPTIONS в Webhook (или включи \"Respond to OPTIONS request\").";
         }
     }
 </script>
