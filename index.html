@@ -59,15 +59,15 @@
             <button class="btn-reset" onclick="resetFactory()">✖ ВЫХОД</button>
         </div>
         
-        <div id="loader" class="loading">⚙️ Соединение с сервером nikolaenko-ds.ru...</div>
+        <div id="loader" class="loading">⚙️ Соединение с n8n cloud...</div>
         <div id="stats-grid" class="grid"></div>
         <div id="error-display" class="error-msg" style="display:none;"></div>
     </div>
 </div>
 
 <script>
-    // ТВОЙ URL ИЗ N8N (Используем TEST для отладки, потом убери -test)
-    const webhookUrl = "https://nikolaenko-ds.ru/webhook-test/content-zavod";
+    // ТВОЙ НОВЫЙ URL ИЗ N8N CLOUD
+    const webhookUrl = "https://claw1943.app.n8n.cloud/webhook-test/content-zavod";
 
     window.onload = () => {
         if (localStorage.getItem('zavod_key')) {
@@ -99,14 +99,14 @@
         const errorDisplay = document.getElementById('error-display');
 
         try {
-            // Делаем запрос к твоему n8n
+            // Делаем запрос к твоему n8n в облаке
             const response = await fetch(webhookUrl);
             
             if (!response.ok) throw new Error("n8n сервер ответил ошибкой: " + response.status);
             
             const data = await response.json();
             
-            // Проверка структуры данных (массив или объект)
+            // Проверка структуры данных
             const accounts = Array.isArray(data) ? data : (data.accounts || [data]);
 
             loader.style.display = 'none';
@@ -132,8 +132,9 @@
             errorDisplay.style.display = 'block';
             errorDisplay.innerHTML = `
                 <strong>Ошибка загрузки:</strong> ${err.message}<br><br>
-                1. Проверь, нажат ли в n8n <strong>Execute Workflow</strong>.<br>
-                2. Убедись, что в узле Webhook включен <strong>CORS</strong> (Access-Control-Allow-Origin: *).
+                1. Проверь, нажат ли в n8n <strong>Execute Workflow</strong> (для Test URL).<br>
+                2. Если используешь Production URL, убедись, что воркфлоу <strong>Active</strong>.<br>
+                3. Убедись, что в узле Webhook включен <strong>CORS</strong>.
             `;
         }
     }
