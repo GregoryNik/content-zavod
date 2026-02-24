@@ -6,38 +6,27 @@
     <title>Контент Завод — Аналитика</title>
     <style>
         :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #00ff88; --text: #ffffff; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
-        
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; }
         h1 { color: var(--accent); margin: 0; font-size: 28px; letter-spacing: 1px; }
+        .btn-reset { background: none; border: 1px solid #444; color: #ff4444; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
         
-        .btn-reset { background: none; border: 1px solid #444; color: #ff4444; padding: 8px 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-        .btn-reset:hover { background: #331111; border-color: #ff4444; }
-
-        /* Авторизация */
         #auth-screen { text-align: center; margin-top: 100px; }
-        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; width: 300px; margin-bottom: 20px; font-size: 16px; outline: none; }
-        input:focus { border-color: var(--accent); }
-        .btn-login { background: var(--accent); color: black; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; }
+        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; width: 300px; margin-bottom: 20px; }
+        .btn-login { background: var(--accent); color: black; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; }
 
-        /* Дашборд */
         #dashboard { display: none; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: var(--card); border-radius: 18px; padding: 25px; border: 1px solid #333; position: relative; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        
-        .platform { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 900; margin-bottom: 8px; display: block; }
-        .username { font-size: 22px; font-weight: bold; margin-bottom: 20px; display: block; }
-        
-        .stat-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
-        .stat-label { font-size: 14px; color: #aaa; }
-        .stat-value { font-size: 24px; font-weight: bold; }
-        .views-color { color: #00d4ff; }
-
-        .loading { text-align: center; margin-top: 50px; font-size: 18px; color: var(--accent); }
-        .error-msg { background: #331111; color: #ff9999; padding: 20px; border-radius: 12px; border: 1px solid red; margin-top: 20px; line-height: 1.5; }
+        .card { background: var(--card); border-radius: 18px; padding: 25px; border: 1px solid #333; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); }
+        .platform { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 900; }
+        .username { font-size: 20px; font-weight: bold; display: block; margin: 10px 0; }
+        .stat-item { display: flex; justify-content: space-between; background: #252525; padding: 12px; border-radius: 10px; margin-bottom: 8px; }
+        .stat-value { font-weight: bold; color: var(--accent); }
+        .link-btn { display: inline-block; margin-top: 15px; color: #00d4ff; text-decoration: none; font-size: 14px; }
+        .loading { text-align: center; color: var(--accent); margin-top: 50px; }
     </style>
 </head>
 <body>
@@ -46,43 +35,33 @@
     <div id="auth-screen">
         <div class="auth-card">
             <h1>🏭 КОНТЕНТ ЗАВОД</h1>
-            <p style="color:#888; margin-bottom: 25px;">Введите API ключ Blotato для доступа</p>
+            <p style="color:#888;">Введите ключ для доступа к ферме</p>
             <input type="password" id="key-input" placeholder="blt_...">
-            <br>
-            <button class="btn-login" onclick="startFactory()">ЗАПУСТИТЬ ЦЕХ</button>
+            <button class="btn-login" onclick="startFactory()">ЗАПУСТИТЬ</button>
         </div>
     </div>
 
     <div id="dashboard">
         <div class="header">
-            <h1>🏭 КОНТЕНТ ЗАВОД</h1>
-            <button class="btn-reset" onclick="resetFactory()">✖ ВЫХОД</button>
+            <h1>🏭 ЦЕХ АНАЛИТИКИ</h1>
+            <button class="btn-reset" onclick="resetFactory()">ВЫХОД</button>
         </div>
-        
-        <div id="loader" class="loading">⚙️ Соединение с n8n cloud...</div>
+        <div id="loader" class="loading">⚙️ Собираем данные с фермы...</div>
         <div id="stats-grid" class="grid"></div>
-        <div id="error-display" class="error-msg" style="display:none;"></div>
     </div>
 </div>
 
 <script>
-    // ТВОЙ НОВЫЙ URL ИЗ N8N CLOUD
     const webhookUrl = "https://claw1943.app.n8n.cloud/webhook-test/content-zavod";
 
-    window.onload = () => {
-        if (localStorage.getItem('zavod_key')) {
-            showStats();
-        }
-    };
+    window.onload = () => { if (localStorage.getItem('zavod_key')) showStats(); };
 
     function startFactory() {
         const val = document.getElementById('key-input').value.trim();
         if (val.startsWith('blt_')) {
             localStorage.setItem('zavod_key', val);
             showStats();
-        } else {
-            alert("Ключ должен начинаться с blt_");
-        }
+        } else { alert("Неверный ключ"); }
     }
 
     function resetFactory() {
@@ -93,52 +72,33 @@
     async function showStats() {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
-        
         const grid = document.getElementById('stats-grid');
         const loader = document.getElementById('loader');
-        const errorDisplay = document.getElementById('error-display');
 
         try {
-            // Делаем запрос к твоему n8n в облаке
             const response = await fetch(webhookUrl);
+            const accounts = await response.json();
             
-            if (!response.ok) throw new Error("n8n сервер ответил ошибкой: " + response.status);
-            
-            const data = await response.json();
-            
-            // Проверка структуры данных
-            const accounts = Array.isArray(data) ? data : (data.accounts || [data]);
-
             loader.style.display = 'none';
             grid.innerHTML = accounts.map(acc => `
                 <div class="card">
-                    <span class="platform">${acc.platform || 'Social'}</span>
-                    <span class="username">${acc.username || 'Аккаунт'}</span>
-                    
+                    <span class="platform">${acc.platform || 'Account'}</span>
+                    <span class="username">${acc.name || acc.username || 'Аккаунт'}</span>
                     <div class="stat-item">
-                        <span class="stat-label">Видео</span>
+                        <span>Видео</span>
                         <span class="stat-value">${acc.total_posts || 0}</span>
                     </div>
-                    
                     <div class="stat-item">
-                        <span class="stat-label">Просмотры</span>
-                        <span class="stat-value views-color">${acc.metrics?.views || acc.total_views || 0}</span>
+                        <span>Просмотры</span>
+                        <span class="stat-value">${acc.total_views || 0}</span>
                     </div>
+                    ${acc.url ? `<a href="${acc.url}" target="_blank" class="link-btn">🔗 Перейти в аккаунт</a>` : ''}
                 </div>
             `).join('');
-
         } catch (err) {
-            loader.style.display = 'none';
-            errorDisplay.style.display = 'block';
-            errorDisplay.innerHTML = `
-                <strong>Ошибка загрузки:</strong> ${err.message}<br><br>
-                1. Проверь, нажат ли в n8n <strong>Execute Workflow</strong> (для Test URL).<br>
-                2. Если используешь Production URL, убедись, что воркфлоу <strong>Active</strong>.<br>
-                3. Убедись, что в узле Webhook включен <strong>CORS</strong>.
-            `;
+            loader.innerHTML = "❌ Ошибка. Нажмите 'Execute Workflow' в n8n.";
         }
     }
 </script>
-
 </body>
 </html>
