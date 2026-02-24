@@ -3,38 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Контент Завод — Управление</title>
+    <title>Контент Завод — Аналитика</title>
     <style>
         :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #00ff88; --text: #ffffff; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
         
-        /* Заголовок и кнопки */
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 30px; }
-        h1 { color: var(--accent); margin: 0; font-size: 24px; }
-        .back-btn { background: none; border: 1px solid #444; color: #ff4444; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.3s; }
-        .back-btn:hover { background: #331111; border-color: #ff4444; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; }
+        h1 { color: var(--accent); margin: 0; font-size: 28px; letter-spacing: 1px; }
+        
+        .btn-reset { background: none; border: 1px solid #444; color: #ff4444; padding: 8px 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .btn-reset:hover { background: #331111; border-color: #ff4444; }
 
-        /* Экран входа */
+        /* Авторизация */
         #auth-screen { text-align: center; margin-top: 100px; }
-        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 300px; margin-bottom: 20px; outline: none; }
-        .login-btn { background: var(--accent); color: black; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; width: 300px; margin-bottom: 20px; font-size: 16px; outline: none; }
+        input:focus { border-color: var(--accent); }
+        .btn-login { background: var(--accent); color: black; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; }
 
-        /* Сетка аккаунтов */
+        /* Дашборд */
         #dashboard { display: none; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: var(--card); border-radius: 15px; padding: 25px; border: 1px solid #333; position: relative; }
-        .platform-label { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: bold; margin-bottom: 10px; display: block; }
-        .username { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+        .card { background: var(--card); border-radius: 18px; padding: 25px; border: 1px solid #333; position: relative; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
         
-        .stat-box { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .platform { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 900; margin-bottom: 8px; display: block; }
+        .username { font-size: 22px; font-weight: bold; margin-bottom: 20px; display: block; }
+        
+        .stat-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
         .stat-label { font-size: 14px; color: #aaa; }
-        .stat-value { font-size: 22px; font-weight: bold; }
-        .views { color: #00d4ff; }
+        .stat-value { font-size: 24px; font-weight: bold; }
+        .views-color { color: #00d4ff; }
 
         .loading { text-align: center; margin-top: 50px; font-size: 18px; color: var(--accent); }
-        .error { background: #331111; color: #ff9999; padding: 20px; border-radius: 10px; border: 1px solid red; margin-top: 20px; }
+        .error-msg { background: #331111; color: #ff9999; padding: 20px; border-radius: 12px; border: 1px solid red; margin-top: 20px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -42,97 +45,96 @@
 <div class="container">
     <div id="auth-screen">
         <div class="auth-card">
-            <h1>🏭 Контент Завод</h1>
-            <p style="color:#888">Введите API ключ Blotato для запуска</p>
-            <input type="password" id="api-key-input" placeholder="blt_...">
+            <h1>🏭 КОНТЕНТ ЗАВОД</h1>
+            <p style="color:#888; margin-bottom: 25px;">Введите API ключ Blotato для доступа</p>
+            <input type="password" id="key-input" placeholder="blt_...">
             <br>
-            <button class="login-btn" onclick="saveKey()">Запустить производство</button>
+            <button class="btn-login" onclick="startFactory()">ЗАПУСТИТЬ ЦЕХ</button>
         </div>
     </div>
 
     <div id="dashboard">
         <div class="header">
-            <h1>🏭 Контент Завод — Аналитика</h1>
-            <button class="back-btn" onclick="logout()">✖ Сменить ключ / Выйти</button>
+            <h1>🏭 КОНТЕНТ ЗАВОД</h1>
+            <button class="btn-reset" onclick="resetFactory()">✖ ВЫХОД</button>
         </div>
         
-        <div id="status" class="loading">⚙️ Получение данных через n8n...</div>
+        <div id="loader" class="loading">⚙️ Соединение с сервером nikolaenko-ds.ru...</div>
         <div id="stats-grid" class="grid"></div>
-        <div id="error-box" class="error" style="display:none;"></div>
+        <div id="error-display" class="error-msg" style="display:none;"></div>
     </div>
 </div>
 
 <script>
-    // ВСТАВЬ СВОЙ URL ВЕБХУКА ИЗ N8N НИЖЕ
-    const n8nWebhookUrl = "ТВОЙ_PRODUCTION_URL_ВЕБХУКА";
+    // ТВОЙ URL ИЗ N8N (Используем TEST для отладки, потом убери -test)
+    const webhookUrl = "https://nikolaenko-ds.ru/webhook-test/content-zavod";
 
     window.onload = () => {
-        const savedKey = localStorage.getItem('blotato_factory_key');
-        if (savedKey) {
-            showDashboard();
+        if (localStorage.getItem('zavod_key')) {
+            showStats();
         }
     };
 
-    function saveKey() {
-        const key = document.getElementById('api-key-input').value.trim();
-        if (key.startsWith('blt_')) {
-            localStorage.setItem('blotato_factory_key', key);
-            showDashboard();
+    function startFactory() {
+        const val = document.getElementById('key-input').value.trim();
+        if (val.startsWith('blt_')) {
+            localStorage.setItem('zavod_key', val);
+            showStats();
         } else {
             alert("Ключ должен начинаться с blt_");
         }
     }
 
-    function logout() {
-        localStorage.removeItem('blotato_factory_key');
+    function resetFactory() {
+        localStorage.removeItem('zavod_key');
         location.reload();
     }
 
-    async function showDashboard() {
+    async function showStats() {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         
         const grid = document.getElementById('stats-grid');
-        const status = document.getElementById('status');
-        const errorBox = document.getElementById('error-box');
+        const loader = document.getElementById('loader');
+        const errorDisplay = document.getElementById('error-display');
 
         try {
-            const response = await fetch(n8nWebhookUrl);
-            if (!response.ok) throw new Error("n8n вернул ошибку " + response.status);
+            // Делаем запрос к твоему n8n
+            const response = await fetch(webhookUrl);
+            
+            if (!response.ok) throw new Error("n8n сервер ответил ошибкой: " + response.status);
             
             const data = await response.json();
             
-            // Если n8n возвращает массив данных
+            // Проверка структуры данных (массив или объект)
             const accounts = Array.isArray(data) ? data : (data.accounts || [data]);
 
-            if (!accounts || accounts.length === 0) {
-                status.innerText = "🔌 Аккаунты не найдены. Проверьте Blotato.";
-                return;
-            }
-
-            status.style.display = 'none';
+            loader.style.display = 'none';
             grid.innerHTML = accounts.map(acc => `
                 <div class="card">
-                    <span class="platform-label">${acc.platform || 'Social'}</span>
-                    <div class="username">${acc.username || 'Аккаунт'}</div>
+                    <span class="platform">${acc.platform || 'Social'}</span>
+                    <span class="username">${acc.username || 'Аккаунт'}</span>
                     
-                    <div class="stat-box">
+                    <div class="stat-item">
                         <span class="stat-label">Видео</span>
                         <span class="stat-value">${acc.total_posts || 0}</span>
                     </div>
                     
-                    <div class="stat-box">
+                    <div class="stat-item">
                         <span class="stat-label">Просмотры</span>
-                        <span class="stat-value views">${acc.metrics?.views || acc.total_views || 0}</span>
+                        <span class="stat-value views-color">${acc.metrics?.views || acc.total_views || 0}</span>
                     </div>
                 </div>
             `).join('');
 
         } catch (err) {
-            status.style.display = 'none';
-            errorBox.style.display = 'block';
-            errorBox.innerHTML = `<b>Ошибка:</b> ${err.message}<br><br>
-            Проверьте, что воркфлоу в n8n АКТИВИРОВАН (Active) и используется Production URL.`;
+            loader.style.display = 'none';
+            errorDisplay.style.display = 'block';
+            errorDisplay.innerHTML = `
+                <strong>Ошибка загрузки:</strong> ${err.message}<br><br>
+                1. Проверь, нажат ли в n8n <strong>Execute Workflow</strong>.<br>
+                2. Убедись, что в узле Webhook включен <strong>CORS</strong> (Access-Control-Allow-Origin: *).
+            `;
         }
     }
 </script>
