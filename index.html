@@ -8,15 +8,25 @@
         :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #00ff88; --text: #ffffff; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
-        h1 { color: var(--accent); border-bottom: 2px solid #333; padding-bottom: 10px; }
         
+        /* Заголовок и кнопки */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 30px; }
+        h1 { color: var(--accent); margin: 0; font-size: 24px; }
+        .back-btn { background: none; border: 1px solid #444; color: #ff4444; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.3s; }
+        .back-btn:hover { background: #331111; border-color: #ff4444; }
+
+        /* Экран входа */
+        #auth-screen { text-align: center; margin-top: 100px; }
+        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 300px; margin-bottom: 20px; outline: none; }
+        .login-btn { background: var(--accent); color: black; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+
         /* Сетка аккаунтов */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
-        .card { background: var(--card); border-radius: 15px; padding: 25px; border: 1px solid #333; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        
-        .platform-label { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: bold; }
-        .username { font-size: 20px; font-weight: bold; margin: 5px 0 20px 0; }
+        #dashboard { display: none; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: var(--card); border-radius: 15px; padding: 25px; border: 1px solid #333; position: relative; }
+        .platform-label { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: bold; margin-bottom: 10px; display: block; }
+        .username { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         
         .stat-box { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
         .stat-label { font-size: 14px; color: #aaa; }
@@ -30,17 +40,58 @@
 <body>
 
 <div class="container">
-    <h1>🏭 Контент Завод — Аналитика</h1>
-    <div id="status" class="loading">⚙️ Соединение с n8n и сбор данных из Blotato...</div>
-    <div id="stats-grid" class="grid"></div>
-    <div id="error-box" class="error" style="display:none;"></div>
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h1>🏭 Контент Завод</h1>
+            <p style="color:#888">Введите API ключ Blotato для запуска</p>
+            <input type="password" id="api-key-input" placeholder="blt_...">
+            <br>
+            <button class="login-btn" onclick="saveKey()">Запустить производство</button>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div class="header">
+            <h1>🏭 Контент Завод — Аналитика</h1>
+            <button class="back-btn" onclick="logout()">✖ Сменить ключ / Выйти</button>
+        </div>
+        
+        <div id="status" class="loading">⚙️ Получение данных через n8n...</div>
+        <div id="stats-grid" class="grid"></div>
+        <div id="error-box" class="error" style="display:none;"></div>
+    </div>
 </div>
 
 <script>
-    // СЮДА ВСТАВЬТЕ ВАШ URL ИЗ n8n
-    const n8nWebhookUrl = "ВАШ_ПРОДАКШН_URL_ВЕБХУКА_ИЗ_N8N";
+    // ВСТАВЬ СВОЙ URL ВЕБХУКА ИЗ N8N НИЖЕ
+    const n8nWebhookUrl = "ТВОЙ_PRODUCTION_URL_ВЕБХУКА";
 
-    async function loadData() {
+    window.onload = () => {
+        const savedKey = localStorage.getItem('blotato_factory_key');
+        if (savedKey) {
+            showDashboard();
+        }
+    };
+
+    function saveKey() {
+        const key = document.getElementById('api-key-input').value.trim();
+        if (key.startsWith('blt_')) {
+            localStorage.setItem('blotato_factory_key', key);
+            showDashboard();
+        } else {
+            alert("Ключ должен начинаться с blt_");
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('blotato_factory_key');
+        location.reload();
+    }
+
+    async function showDashboard() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        
         const grid = document.getElementById('stats-grid');
         const status = document.getElementById('status');
         const errorBox = document.getElementById('error-box');
@@ -51,20 +102,22 @@
             
             const data = await response.json();
             
-            // Если данных нет
-            if (!data || data.length === 0) {
-                status.innerText = "🔌 Аккаунты не найдены. Проверьте подключение в Blotato.";
+            // Если n8n возвращает массив данных
+            const accounts = Array.isArray(data) ? data : (data.accounts || [data]);
+
+            if (!accounts || accounts.length === 0) {
+                status.innerText = "🔌 Аккаунты не найдены. Проверьте Blotato.";
                 return;
             }
 
             status.style.display = 'none';
-            grid.innerHTML = data.map(acc => `
+            grid.innerHTML = accounts.map(acc => `
                 <div class="card">
-                    <div class="platform-label">${acc.platform || 'Соцсеть'}</div>
-                    <div class="username">${acc.username || 'Без имени'}</div>
+                    <span class="platform-label">${acc.platform || 'Social'}</span>
+                    <div class="username">${acc.username || 'Аккаунт'}</div>
                     
                     <div class="stat-box">
-                        <span class="stat-label">Опубликовано</span>
+                        <span class="stat-label">Видео</span>
                         <span class="stat-value">${acc.total_posts || 0}</span>
                     </div>
                     
@@ -79,12 +132,9 @@
             status.style.display = 'none';
             errorBox.style.display = 'block';
             errorBox.innerHTML = `<b>Ошибка:</b> ${err.message}<br><br>
-            1. Убедитесь, что воркфлоу в n8n активирован.<br>
-            2. Проверьте, что n8n успешно получает данные от Blotato.`;
+            Проверьте, что воркфлоу в n8n АКТИВИРОВАН (Active) и используется Production URL.`;
         }
     }
-
-    loadData();
 </script>
 
 </body>
