@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Blotato Accounts Dashboard</title>
+  <title>Контент Завод — Дашборд аккаунтов</title>
 
   <!-- Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -496,8 +496,8 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <h1>Blotato Dashboard</h1>
-          <div class="sub">Connected accounts • quick links</div>
+          <h1>Контент Завод</h1>
+          <div class="sub">Подключённые аккаунты • быстрые ссылки</div>
         </div>
       </div>
 
@@ -512,14 +512,14 @@
         <div>
           <h2>Список подключённых аккаунтов в одном месте</h2>
           <p>
-            Введите API‑ключ Blotato, и мы покажем все подключённые TikTok / Instagram / YouTube аккаунты.
-            Для YouTube, если Blotato не отдаёт handle/channelId, будет кнопка поиска по названию канала.
+            Введите API‑ключ , и мы покажем все подключённые TikTok / Instagram / YouTube аккаунты.
+            Для YouTube, если  не отдаёт handle/channelId, будет кнопка поиска по названию канала.
           </p>
 
           <div class="controls">
             <div class="field">
               <span class="ic" aria-hidden="true"></span>
-              <input id="apiKey" type="password" placeholder="blt_… ваш API ключ" autocomplete="off" />
+              <input id="apiKey" type="password" placeholder="Ваш API ключ" autocomplete="off" />
               <span class="kbd">⌘K</span>
             </div>
 
@@ -579,7 +579,7 @@
     <div class="footer">
       <div>Webhook: <span id="wh"></span></div>
       <div>
-        <a href="https://my.blotato.com/api-dashboard" target="_blank" rel="noopener noreferrer">Blotato API Dashboard</a>
+        <a href="https://my.blotato.com/api-dashboard" target="_blank" rel="noopener noreferrer">API Dashboard</a>
         <span style="opacity:.35;"> • </span>
         <a href="#" id="copyWebhook">Скопировать webhook</a>
       </div>
@@ -622,6 +622,26 @@
 
     // ====== localStorage ======
     const LS_KEY = "blotato_key";
+    const YT_LINKS_KEY = "yt_links_v1"; // { [account_id]: "https://..." }
+
+    function loadYtLinks(){
+      try{ return JSON.parse(localStorage.getItem(YT_LINKS_KEY) || "{}") || {}; }catch(e){ return {}; }
+    }
+    function saveYtLinks(map){
+      localStorage.setItem(YT_LINKS_KEY, JSON.stringify(map || {}));
+    }
+    function getYtLink(accountId){
+      const m = loadYtLinks();
+      return (m[accountId] || "").trim() || null;
+    }
+    function setYtLink(accountId, url){
+      const m = loadYtLinks();
+      if (url) m[accountId] = url;
+      else delete m[accountId];
+      saveYtLinks(m);
+    }
+
+
     function getSavedKey() { return (localStorage.getItem(LS_KEY) || "").trim(); }
     function saveKey() { localStorage.setItem(LS_KEY, (elKey.value || "").trim()); setStatus(true, "Ключ сохранён"); }
     function logout() {
@@ -702,7 +722,9 @@
         const username = (acc.username || "").trim();
         const id = escapeHtml(acc.account_id || acc.id || "");
 
-        const url = acc.profile_url || null;
+        const isYt = platform === "youtube";
+        const ytSaved = (isYt && id) ? getYtLink(id) : null;
+        const url = ytSaved || acc.profile_url || null;
         const sUrl = acc.search_url || null;
 
         const linkHtml = url
@@ -711,6 +733,11 @@
               ? `<a class="linkbtn search" href="${escapeHtml(sUrl)}" target="_blank" rel="noopener noreferrer">ПОИСК</a>`
               : `<span class="linkbtn none">НЕТ ССЫЛКИ</span>`
             );
+
+        const ytEditBtn = isYt
+          ? `<a class="linkbtn" href="#" data-yt-edit="${id}" data-yt-has="${url ? "1" : "0"}">${url ? "ИЗМЕНИТЬ ССЫЛКУ" : "ДОБАВИТЬ ССЫЛКУ"}</a>`
+          : ``;
+
 
         const uBadge = username
           ? `<span class="badge">@${escapeHtml(username.replace(/^@/, ""))}</span>`
@@ -726,6 +753,7 @@
             </div>
             <div class="actions">
               ${linkHtml}
+              ${ytEditBtn}
               <a class="linkbtn" href="#" data-copy="${escapeHtml(username || name)}">КОПИРОВАТЬ</a>
             </div>
           </div>
