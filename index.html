@@ -6,20 +6,20 @@
     <title>Контент Завод — Дашборд</title>
     <style>
         :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #00ff88; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; }
-        h1 { color: var(--accent); }
+        h1 { color: var(--accent); text-shadow: 0 0 10px rgba(0,255,136,0.3); }
         #auth-screen { text-align: center; margin-top: 100px; }
         .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
         input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; width: 300px; margin-bottom: 20px; outline: none; }
-        input:focus { border-color: var(--accent); }
-        .btn { background: var(--accent); color: black; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn { background: var(--accent); color: black; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn:hover { background: #00cc6e; transform: scale(1.02); }
         #dashboard { display: none; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
-        .card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #333; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); }
-        .status { color: var(--accent); margin-bottom: 20px; font-weight: bold; }
-        .error-log { background: #331111; color: #ff9999; padding: 15px; border-radius: 8px; font-size: 13px; margin-top: 20px; border: 1px solid red; }
+        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; position: relative; overflow: hidden; }
+        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); }
+        .status { color: var(--accent); font-weight: bold; margin-bottom: 20px; }
+        .error-log { background: #2a1111; color: #ff9999; padding: 20px; border-radius: 10px; border: 1px solid #551111; margin-top: 20px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -28,7 +28,7 @@
     <div id="auth-screen">
         <div class="auth-card">
             <h1>🏭 Контент Завод</h1>
-            <p>Введите API ключ из Blotato (Settings > API keys)</p>
+            <p style="color: #888;">Введите API ключ (Settings > API keys)</p>
             <input type="password" id="api-key" placeholder="blt_...">
             <br>
             <button class="btn" onclick="login()">Запустить производство</button>
@@ -40,14 +40,14 @@
             <h1>🏭 Контент Завод — Аналитика</h1>
             <button onclick="logout()" style="background:none; border:none; color:#ff4444; cursor:pointer; text-decoration: underline;">Сменить ключ</button>
         </div>
-        <div id="status" class="status">Подключение...</div>
+        <div id="status" class="status">Инициализация...</div>
         <div id="stats-grid" class="grid"></div>
         <div id="debug-info"></div>
     </div>
 </div>
 
 <script>
-    const storageKey = 'blotato_factory_key';
+    const storageKey = 'blotato_factory_key_v3';
 
     window.onload = () => {
         const savedKey = localStorage.getItem(storageKey);
@@ -76,57 +76,88 @@
         const grid = document.getElementById('stats-grid');
         const debug = document.getElementById('debug-info');
 
-        status.innerText = "⚙️ Связь с сервером Blotato...";
+        status.innerText = "⚙️ Проверка каналов связи с Blotato...";
         
-        // Используем более стабильный прокси
-        const proxy = "https://api.allorigins.win/raw?url=";
-        const target = "https://api.blotato.com/v1/accounts";
+        // Перебор возможных эндпоинтов на основе документации
+        const endpoints = [
+            "https://api.blotato.com/v1/accounts",
+            "https://api.blotato.com/v1/social-accounts",
+            "https://api.blotato.com/v1/account"
+        ];
 
-        try {
-            const response = await fetch(proxy + encodeURIComponent(target), {
-                headers: { 
-                    'Authorization': `Bearer ${key}`,
-                    'Accept': 'application/json'
+        let success = false;
+        let lastError = "";
+
+        for (let url of endpoints) {
+            if (success) break;
+            
+            try {
+                // Используем прокси, который не добавляет свои заголовки (allorigins через raw)
+                const finalUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                
+                const response = await fetch(finalUrl, {
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${key}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderData(data);
+                    success = true;
+                    status.innerText = "✅ Связь установлена. Данные получены.";
+                } else {
+                    lastError = `Ошибка сервера: ${response.status}`;
                 }
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Сервер ответил: ${response.status}. ${errText.substring(0, 50)}`);
+            } catch (err) {
+                lastError = err.message;
             }
+        }
 
-            const data = await response.json();
-            
-            if (!data || (Array.isArray(data) && data.length === 0)) {
-                status.innerText = "🔌 Аккаунты не найдены. Подключите соцсети в Blotato.";
-                return;
-            }
-
-            status.innerText = `✅ Цех работает. Аккаунтов: ${Array.isArray(data) ? data.length : 1}`;
-            
-            const accounts = Array.isArray(data) ? data : [data];
-            grid.innerHTML = accounts.map(acc => `
-                <div class="card">
-                    <div style="color: var(--accent); font-size: 11px; text-transform: uppercase;">${acc.platform || 'Social'}</div>
-                    <div style="font-size: 20px; font-weight: bold; margin: 10px 0;">${acc.username || 'Аккаунт'}</div>
-                    <div style="color: #888; margin-top: 15px;">Видео опубликовано:</div>
-                    <div style="font-size: 24px; font-weight: bold;">${acc.total_posts || 0}</div>
-                    <div style="color: #888; margin-top: 10px;">Просмотры:</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #00d4ff;">${acc.metrics?.views || 0}</div>
-                </div>
-            `).join('');
-
-        } catch (err) {
-            status.innerText = "❌ Ошибка авторизации";
+        if (!success) {
+            status.innerText = "❌ Ошибка загрузки";
             debug.innerHTML = `
                 <div class="error-log">
-                    <b>Ошибка системы:</b> ${err.message}<br><br>
-                    <b>Что делать:</b><br>
-                    1. Убедитесь, что скопировали ключ полностью из раздела <b>Settings -> API keys</b>.<br>
-                    2. Проверьте, что в Blotato подключены аккаунты в разделе <b>Social accounts</b>.<br>
-                    3. Попробуйте нажать кнопку "Сменить ключ" и ввести его заново.
+                    <b>Не удалось получить данные:</b> ${lastError}<br><br>
+                    <b>Вероятные причины:</b><br>
+                    1. В Blotato не созданы API ключи или они отозваны[cite: 5].<br>
+                    2. В разделе <b>Social accounts</b> не подключены аккаунты (YouTube, TikTok и др.)[cite: 5].<br>
+                    3. Сервер Blotato блокирует запросы от автоматических прокси.
                 </div>`;
         }
+    }
+
+    function renderData(data) {
+        const grid = document.getElementById('stats-grid');
+        const accounts = Array.isArray(data) ? data : (data.accounts || [data]);
+        
+        if (accounts.length === 0) {
+            document.getElementById('status').innerText = "🔌 Аккаунты найдены, но список пуст.";
+            return;
+        }
+
+        grid.innerHTML = accounts.map(acc => `
+            <div class="card">
+                <div style="color: var(--accent); font-size: 11px; text-transform: uppercase; font-weight: bold;">
+                    ${acc.platform || 'Соцсеть'}
+                </div>
+                <div style="font-size: 22px; font-weight: bold; margin: 10px 0;">${acc.username || 'Аккаунт'}</div>
+                
+                <div style="margin-top: 20px;">
+                    <div style="color: #888; font-size: 13px;">Опубликовано видео:</div>
+                    <div style="font-size: 28px; font-weight: bold;">${acc.total_posts || acc.post_count || 0}</div>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <div style="color: #888; font-size: 13px;">Просмотры (Viral AI Coach):</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #00d4ff;">
+                        ${acc.metrics?.views || acc.total_views || '⚡ 0'}
+                    </div>
+                </div>
+            </div>
+        `).join('');
     }
 </script>
 </body>
