@@ -11,71 +11,102 @@
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; }
         h1 { color: var(--accent); margin: 0; font-size: 28px; letter-spacing: 1px; }
         .btn-reset { background: none; border: 1px solid #444; color: #ff4444; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+        
         #auth-screen { text-align: center; margin-top: 100px; }
         .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; display: inline-block; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; width: 300px; margin-bottom: 20px; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; width: 300px; margin-bottom: 20px; outline: none; }
+        input:focus { border-color: var(--accent); }
         .btn-login { background: var(--accent); color: black; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; }
+
         #dashboard { display: none; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: var(--card); border-radius: 18px; padding: 25px; border: 1px solid #333; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        .platform { font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 900; }
-        .username { font-size: 22px; font-weight: bold; margin: 10px 0; display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--card); border-radius: 20px; padding: 25px; border: 1px solid #333; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-3px); }
+        .platform { font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 900; opacity: 0.8; }
+        .username { font-size: 22px; font-weight: bold; display: block; margin: 10px 0; }
         .stat-item { display: flex; justify-content: space-between; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: var(--accent); }
-        .loading { text-align: center; margin-top: 50px; font-size: 18px; color: var(--accent); }
+        .stat-value { font-weight: bold; color: var(--accent); font-size: 20px; }
+        .loading { text-align: center; color: var(--accent); margin-top: 50px; font-size: 18px; }
     </style>
 </head>
 <body>
+
 <div class="container">
     <div id="auth-screen">
         <div class="auth-card">
             <h1>🏭 КОНТЕНТ ЗАВОД</h1>
-            <input type="password" id="key-input" placeholder="Введите API ключ...">
+            <p style="color:#888;">Введите API ключ Blotato</p>
+            <input type="password" id="key-input" placeholder="blt_...">
             <button class="btn-login" onclick="startFactory()">ЗАПУСТИТЬ ЦЕХ</button>
         </div>
     </div>
+
     <div id="dashboard">
-        <div class="header"><h1>🏭 ЦЕХ АНАЛИТИКИ</h1><button class="btn-reset" onclick="resetFactory()">ВЫХОД</button></div>
-        <div id="loader" class="loading">⚙️ Идет загрузка данных из Blotato...</div>
+        <div class="header">
+            <h1>🏭 ЦЕХ АНАЛИТИКИ</h1>
+            <button class="btn-reset" onclick="resetFactory()">ВЫХОД</button>
+        </div>
+        <div id="loader" class="loading">⚙️ Получаем данные из фермы...</div>
         <div id="stats-grid" class="grid"></div>
     </div>
 </div>
+
 <script>
-    const webhookUrl = "https://claw1943.app.n8n.cloud/webhook-test/content-zavod";
+    // ТВОЙ ОСНОВНОЙ URL (без -test)
+    const webhookUrl = "https://nikolaenko-ds.ru/webhook/content-zavod";
+
+    window.onload = () => {
+        if (localStorage.getItem('zavod_key')) showStats();
+    };
+
+    function startFactory() {
+        const val = document.getElementById('key-input').value.trim();
+        if (val.startsWith('blt_')) {
+            localStorage.setItem('zavod_key', val);
+            showStats();
+        } else {
+            alert("Ключ должен начинаться с blt_");
+        }
+    }
+
+    function resetFactory() {
+        localStorage.removeItem('zavod_key');
+        location.reload();
+    }
 
     async function showStats() {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         const grid = document.getElementById('stats-grid');
         const loader = document.getElementById('loader');
+        const key = localStorage.getItem('zavod_key');
 
         try {
-            const response = await fetch(webhookUrl);
+            const response = await fetch(webhookUrl, {
+                headers: { 'blotato-api-key': key }
+            });
             const data = await response.json();
+            
             loader.style.display = 'none';
-
-            if (!data || data.length === 0) {
-                grid.innerHTML = "<h3>Аккаунты не найдены в вашей ферме.</h3>";
-                return;
-            }
-
             grid.innerHTML = data.map(acc => `
                 <div class="card">
                     <span class="platform">${acc.platform || 'Social'}</span>
                     <span class="username">${acc.name || acc.username || 'Аккаунт'}</span>
-                    <div class="stat-item"><span>Видео</span><span class="stat-value">${acc.total_posts || 0}</span></div>
-                    <div class="stat-item"><span>Просмотры</span><span class="stat-value" style="color:#00d4ff;">${(acc.total_views || 0).toLocaleString()}</span></div>
-                    ${acc.url ? `<a href="${acc.url}" target="_blank" style="color:#00ff88; text-decoration:none; font-size:14px;">🔗 Ссылка на аккаунт</a>` : ''}
+                    <div class="stat-item">
+                        <span>Видео</span>
+                        <span class="stat-value">${acc.total_posts || 0}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Просмотры</span>
+                        <span class="stat-value" style="color:#00d4ff;">${(acc.total_views || 0).toLocaleString()}</span>
+                    </div>
+                    ${acc.url ? `<a href="${acc.url}" target="_blank" style="color:#00ff88; text-decoration:none; font-size:12px; margin-top:10px; display:block;">🔗 Ссылка на аккаунт</a>` : ''}
                 </div>
             `).join('');
         } catch (err) {
-            loader.innerHTML = "❌ Ошибка. Нажми 'Execute Workflow' в n8n!";
+            loader.innerHTML = "❌ Ошибка. Убедись, что воркфлоу в n8n включен (ACTIVE).";
         }
     }
-    function startFactory() { localStorage.setItem('zavod_key', 'true'); showStats(); }
-    function resetFactory() { localStorage.removeItem('zavod_key'); location.reload(); }
-    window.onload = () => { if(localStorage.getItem('zavod_key')) showStats(); };
 </script>
 </body>
 </html>
