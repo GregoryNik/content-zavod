@@ -640,6 +640,7 @@
               <input id="apiKey" type="password" placeholder="Введите ваш API ключ..." autocomplete="off" />
             </div>
             <button class="btn primary" id="btnLoad">Загрузить</button>
+            <a class="btn secondary" id="btnAnalytics" href="https://gregorynik.github.io/content-zavod-dashboard/" target="_blank" rel="noopener">Аналитика</a>
             <button class="btn secondary" id="btnSave">Сохранить</button>
             <button class="btn danger" id="btnLogout">Выйти</button>
           </div>
@@ -998,6 +999,14 @@
         setStatus(null, "System Ready");
       }
     })();
-  </script>
+  
+    if (elAnalytics) {
+      elAnalytics.addEventListener('click', (e) => {
+        persistKeyIfAny();
+        // open analytics in same tab (optional). If you prefer new tab, keep the target="_blank" in HTML.
+      });
+    }
+
+</script>
 </body>
 </html>
